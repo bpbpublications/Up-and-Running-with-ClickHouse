@@ -1,0 +1,50 @@
+ClickHouse Installation - Linux Commandline
+
+$ wget https://repo.clickhouse.tech/deb/stable/main/clickhouse-server_21.3.4.25_all.deb
+$ wget https://repo.clickhouse.tech/deb/stable/main/clickhouse-client_21.3.4.25_all.deb
+$ wget https://repo.clickhouse.tech/deb/stable/main/clickhouse-common-static_21.3.4.25_amd64.deb
+$ sudo dpkg -i  clickhouse-*.deb
+$ sudo apt install wget curl python3-pip
+$ pip3 install pandas requests clickhouse-driver
+$ sudo service clickhouse-server start
+$ clickhouse-client
+
+
+ClickHouse Client SQL
+
+:) SHOW DATABASES;
+:) USE system;
+:) SHOW TABLES;
+
+
+Dbeaver
+
+$ sudo snap install dbeaver-ce
+
+Dbeaver - SQL for creating sample table
+
+CREATE TABLE electricity.consumption (
+`Date` Date,
+`DateTime` DateTime,
+`Global_reactive_power` Nullable(Float64),
+`Global_active_power` Nullable(Float64),
+`Voltage` Nullable(Float64),
+`Global_intensity` Nullable(Float64),
+`Sub_metering_1` Nullable(Float64),
+`Sub_metering_2` Nullable(Float64), 
+`Sub_metering_3` Nullable(Float64))
+ENGINE = MergeTree() 
+PARTITION BY toYYYYMMDD(Date) 
+ORDER BY (DateTime) 
+SETTINGS index_granularity = 8192;
+
+
+Dbeaver - Sample data - Linux command
+
+$ python3 download_insert_electricity_data.py
+
+DBeaver SQL for reading sample data inserted
+
+SELECT COUNT() FROM electricity.consumption;
+SELECT * FROM electricity.consumption LIMIT 5;
+

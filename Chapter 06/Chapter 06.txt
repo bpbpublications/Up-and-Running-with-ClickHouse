@@ -1,0 +1,47 @@
+SELECT  COUNT() FROM electricity.consumption ;
+SELECT  COUNT(DISTINCT `Date`) FROM electricity.consumption ;
+SELECT any(`Date`) FROM electricity.consumption;
+SELECT anyHeavy(`Date`) FROM electricity.consumption;
+SELECT anyLast(`Date`) FROM electricity.consumption;
+SELECT min(Voltage), max(Voltage) FROM electricity.consumption;
+SELECT argMin(`Date` ,Voltage), argMin(Voltage, Voltage) FROM electricity.consumption;
+SELECT argMax(`Date` ,Voltage), argMax(Voltage, Voltage) FROM electricity.consumption;
+SELECT sum(Voltage) FROM electricity.consumption;
+SELECT avg(Voltage) FROM electricity.consumption;
+SELECT quantile(0.5)(Voltage), quantile(0.7)(Global_active_power)  FROM electricity.consumption;
+SELECT varSamp(Voltage), varPop(Voltage) FROM electricity.consumption;
+SELECT stddevSamp(Voltage), stddevPop(Voltage) FROM electricity.consumption;
+SELECT covarSamp(Voltage, Global_active_power) AS sample_covar, covarPop(Voltage, Global_active_power) AS population_covar FROM electricity.consumption;
+SELECT corr(Voltage, Global_active_power) FROM electricity.consumption;
+SELECT skewPop(Voltage) FROM electricity.consumption;
+SELECT skewSamp(Voltage) FROM electricity.consumption;
+SELECT kurtPop(Voltage) FROM electricity.consumption;
+SELECT kurtSamp(Voltage) FROM electricity.consumption;
+SELECT avgIf(Voltage, Voltage>245), medianIf(Voltage, Voltage>250) FROM electricity.consumption;
+SELECT array(1,2,3,4,5) AS arr, avgArray(arr) as avg_arr, sumArray(arr) as sum_arr;
+SELECT avgState(Voltage) as state, `Date` FROM electricity.consumption GROUP BY `Date` LIMIT 5;
+
+CREATE MATERIALIZED VIEW electricity.state_merge
+ENGINE = MergeTree()
+ORDER BY  (`Date`)
+AS SELECT 
+avgState(Voltage) as state,
+`Date` FROM electricity.consumption
+GROUP BY `Date`;
+
+INSERT INTO electricity.state_merge
+
+SELECT 
+avgState(Voltage) as state,
+`Date` FROM electricity.consumption
+GROUP BY `Date`;
+
+SELECT avgMerge(state) as final_result,`Date` FROM electricity.state_merge GROUP BY `Date` LIMIT 5;
+SELECT avgMergeState(state) as final_result,`Date` FROM electricity.state_merge GROUP BY `Date` LIMIT 5;
+SELECT avgForEach(arr)
+FROM 
+(SELECT [1,2,3] as arr 
+UNION ALL
+SELECT [4,5,6] as arr);
+SELECT avg(number), avgOrDefault(number) FROM numbers(0);
+SELECT avg(number), avgOrNull(number) FROM numbers(0);

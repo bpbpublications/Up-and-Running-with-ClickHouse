@@ -1,0 +1,46 @@
+CREATE ROLE analyst;
+GRANT SELECT ON electricity.* TO analyst;
+
+ALTER ROLE analyst RENAME TO data_analyst;
+
+SET ROLE data_analyst;
+SET DEFAULT data_analyst;
+SHOW ENABLED ROLES;
+SHOW CURRENT ROLES;
+SHOW CREATE ROLE data_analyst;
+DELETE ROLE data_analyst;
+
+CREATE ROW POLICY row_policy_1 ON electricity.consumption
+FOR SELECT USING Voltage>250.0 TO 'data_analyst';
+
+ALTER ROW POLICY row_policy_1
+FOR SELECT USING Voltage>220.0 TO data_analyst;
+SHOW ROW POLICIES;
+SHOW CREATE ROW POLICY row_policy_1;
+DROP ROW POLICY row_policy_1;
+
+CREATE SETTINGS PROFILE rows_sort_profile SETTINGS max_rows_to_sort = 2048 MIN 1024 MAX 2100 TO clickhouse_user;
+
+ALTER SETTINGS PROFILE rows_sort_profile SETTINGS max_rows_to_sort = 4096 MIN 1024 MAX 8182 ;
+
+SHOW CREATE SETTINGS PROFILE rows_sort_profile;
+SHOW SETTINGS PROFILES;
+DROP SETTINGS PROFILE rows_sort_profile;
+
+CREATE QUOTA my_quota1 FOR INTERVAL 1 MONTH MAX QUERIES 1024 TO clickhouse_user;
+ALTER QUOTA my_quota1 FOR INTERVAL 1 MONTH MAX QUERIES 2048;
+SHOW CREATE QUOTA my_quota1;
+SHOW QUOTAS;
+DROP QUOTA my_quota1;
+
+
+CREATE USER IF NOT EXISTS clickhouse_analyst
+IDENTIFIED WITH SHA256_HASH BY 'a1fe8f79a121256842e7aaef2ab1e339a553a74fe05834ca081259cf66ac5fb5'
+HOST IP '127.0.0.1'
+DEFAULT ROLE 'data_analyst'
+PROFILE 'default';
+
+ALTER USER clickhouse_analyst DEFAULT ROLE 'new_role_name';
+SHOW USERS;
+SHOW CREATE USER clickhouse_analyst;
+DROP USER IF EXISTS clickhouse_analyst;

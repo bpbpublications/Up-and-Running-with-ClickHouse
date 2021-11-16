@@ -1,0 +1,185 @@
+CREATE DATABASE dictionary_testing;
+
+CREATE DICTIONARY dict_testing.mysql_dict
+(
+    emp_no Int64,
+    last_name String
+)
+PRIMARY KEY emp_no
+SOURCE(MYSQL(
+    replica(host '127.0.0.1' priority 1)
+    port 3306
+    user 'mysql_user'
+    password 'clickhouse'
+    db 'employees'
+    table 'employees'
+))
+LAYOUT(FLAT())
+LIFETIME(MIN 3600 MAX 72000);
+
+SELECT * FROM dict_testing.mysql_dict LIMIT 5;
+
+CREATE DICTIONARY dictionary_testing.employees(
+  emp_no UInt64,
+  first_name String,
+  last_name String,
+  hire_date Date
+)
+PRIMARY KEY emp_no
+SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' TABLE 'employees_jdbc_mergetree' PASSWORD '' DB 'employees'))
+LIFETIME(MIN 100 MAX 10000)
+LAYOUT(HASHED());
+
+SELECT dictGet('dictionary_testing.employees', 'first_name', toUInt64(33003)) as first_name;
+
+CREATE DICTIONARY dict_testing.postgresql_dict
+(
+    actor_id Int64,
+    first_name String
+)
+PRIMARY KEY actor_id
+SOURCE(POSTGRESQL(
+    host '127.0.0.1'
+    port 5432
+    user 'postgres'
+    password 'postgres123'
+    db 'dvdrental'
+    table 'actor'
+))
+LAYOUT(FLAT())
+LIFETIME(MIN 3600 MAX 72000);
+Once the dictionary is successfully created, let us read the data from the created dictionary:
+SELECT * FROM dict_testing.postgresql_dict LIMIT 5;
+
+CREATE DATABASE special_engines;
+
+CREATE TABLE special_engines.file_engine
+(
+    Name String,
+    Age Int16,
+    Weight Float32
+)
+ENGINE=File(CSV);
+
+INSERT INTO special_engines.file_engine VALUES 
+('Jack', 31, 65.4),
+('John', 41, 75.9),
+('Jim', 54, 85.3);
+
+SELECT * FROM special_engines.file_engine;
+
+CREATE TABLE special_engines.merge_girls(
+	ID Int32,
+	Name String,
+	Age Int16
+)
+ENGINE=MergeTree()
+ORDER BY (ID, Name, Age);
+
+INSERT INTO special_engines.merge_girls VALUES (1, 'Hannah', 24),
+(2, 'Daphne', 22),
+(3, 'Masha', 28);
+
+
+CREATE TABLE special_engines.merge_boys(
+	ID Int32,
+	Name String,
+	Age Int16
+)
+ENGINE=MergeTree()
+ORDER BY (ID, Name, Age);
+
+INSERT INTO special_engines.merge_boys VALUES (4, 'Dexter', 27),
+(5, 'Freddy', 21),
+(6, 'Joe', 29);
+
+CREATE TABLE special_engines.merge_both as special_engines.merge_girls
+ENGINE=Merge('special_engines', '^merge');
+SELECT * FROM special_engines.merge_both;
+
+CREATE TABLE special_engines.set_engine (
+	ID UInt8)
+Engine = Set;
+
+INSERT INTO special_engines.set_engine VALUES
+(1), (2), (3), (4), (5);
+
+CREATE TABLE special_engines.set_engine_source (
+	ID UInt8,
+	Dt Date DEFAULT toDate('2020-01-01')
+)
+Engine = MergeTree()
+ORDER BY (ID, Dt);
+
+INSERT INTO special_engines.set_engine_source (ID) VALUES (1),(2),(7);
+
+SELECT * FROM special_engines.set_engine_source;
+
+
+SELECT * FROM special_engines.set_engine_source
+WHERE ID IN special_engines.set_engine;
+
+
+CREATE TABLE special_engines.memory_engine (
+	ID UInt8,
+	Name String)
+Engine = Memory;
+
+INSERT INTO special_engines.memory_engine VALUES
+(1,'Smith'),
+(2, 'Heidi'),
+(3, 'Victoria'),
+(4, 'Andrew');
+
+SELECT * FROM special_engines.memory_engine;
+
+CREATE TABLE special_engines.buffer_engine_mergetree (
+	ID UInt8,
+	Name String)
+Engine = MergeTree
+ORDER BY (ID,Name);
+
+
+CREATE TABLE special_engines.buffer_engine AS special_engines.buffer_engine_mergetree
+ENGINE = Buffer(special_engines, buffer_engine_mergetree, 16, 10, 100, 2, 4, 10000000, 100000000);
+
+INSERT INTO special_engines.buffer_engine VALUES
+(1,'Smith'),
+(2, 'Heidi'),
+(3, 'Victoria'),
+(4, 'Andrew');
+
+
+SELECT * FROM special_engines.buffer_engine_mergetree;
+SELECT * FROM special_engines.buffer_engine;
+
+CREATE TABLE special_engines.url_table
+(Buying Nullable(String),
+Maintenance Nullable(String),
+Doors Nullable(UInt64),
+Persons Nullable(UInt64),
+Luggage_Boot Nullable(String),
+safety Nullable(String),
+Class_Value Nullable(String))
+ENGINE=URL('https://archive.ics.uci.edu/ml/machine-learning-databases/car/car.data', CSV);
+Once the table is created, let us run the following query and see the data in the table:
+SELECT * FROM special_engines.url_table LIMIT 10;
+
+
+CREATE TABLE distribute_test
+(
+ name String,
+ age Int16,
+ weight Float32
+)
+Engine=MergeTree()
+ORDER BY name;
+
+
+CREATE TABLE distribute_table_test
+(
+ name String,
+ age Int16,
+ weight Float32
+)
+ENGINE = Distributed(simple_shard_replicas, default, distribute_test);

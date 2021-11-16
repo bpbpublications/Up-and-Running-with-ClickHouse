@@ -1,0 +1,163 @@
+SELECT toFloat32(20);
+SELECT 3.14/0;
+SELECT -3.14/0;
+SELECT 0/0;
+SELECT toDecimal128(20,6);
+SELECT 'Hello world!';
+SELECT * FROM table WHERE a = 'ch\0';
+SELECT toDate('2020-01-01');
+SELECT toDate('2107-01-01');
+SELECT toDate('1969-12-31');
+SELECT toDateTime('2020-01-01 00:00:00');
+SELECT toDateTime64('2020-01-01 00:00:00.0000', 4, ‘Europe/London’);
+SELECT array('a', 'b', 'c', NULL) AS x;
+SELECT ['a', 'b', 'c', NULL] AS x;
+SELECT [1,2,3,4,5.0, NULL] AS x;
+SELECT array('a', 'b', 'c', 1, NULL) AS x;
+SELECT tuple(1,2,'a', toDate('2020-01-01'), Null) AS x, toTypeName(x);
+
+CREATE TABLE nested_example
+(
+dt Date,
+ID UInt32,
+code Nested
+(
+code_id String,
+count UInt32
+)
+)Engine=MergeTree(dt,ID,8192);
+
+INSERT INTO nested_example VALUES ('2020-11-01', 77, ['1', '2', '3'], [125, 654, 785]); 
+SELECT  * FROM nested_example;
+INSERT INTO nested_example VALUES ('2020-11-02',76,['1','2'],[35, 49]);
+INSERT INTO nested_example VALUES ('2020-11-02',76,['1','2'],[35, 49, 77]);
+
+SELECT "DateTime", Voltage FROM electricity.consumption;
+SELECT  *  FROM electricity.consumption;
+SELECT  *  FROM electricity.consumption LIMIT 10;
+SELECT  DISTINCT(Sub_metering_3) FROM electricity.consumption;
+SELECT AVG(column_name) FROM table_name SAMPLE 8/10 OFFSET 1/2;
+SELECT "Date" FROM electricity.consumption WHERE Voltage > 254.0;
+SELECT "Date", Global_intensity FROM electricity.consumption WHERE Voltage >= 250.0 AND Global_intensity<4.6;
+SELECT AVG(Voltage), "Date" FROM electricity.consumption GROUP BY "Date";
+SELECT AVG(Voltage), "Date" FROM electricity.consumption GROUP BY "Date" ORDER BY "Date" DESC;
+CREATE DATABASE IF NOT EXISTS testing;
+
+CREATE TABLE IF NOT EXISTS testing.test_table (
+	ID String,
+	Name String DEFAULT ID CODEC(LZ4),
+	Quantity UInt32 CODEC(ZSTD),
+	Total Float32 MATERIALIZED Quantity*3.14,
+	Bill Float32 ALIAS Total*1,
+	"Date" Date,
+	CONSTRAINT quantity_constraint CHECK Quantity>0)
+ENGINE = MergeTree()
+PARTITION BY Date
+ORDER BY (ID, Name, Date);
+
+CREATE VIEW testing.test_table_view AS SELECT ID,Name,"Date" FROM testing.test_table;
+
+CREATE MATERIALIZED VIEW testing.test_table_materialized_view
+ENGINE = MergeTree()
+ORDER BY  (ID, Name, Date)
+AS SELECT ID,Name,"Date" FROM testing.test_table;
+
+INSERT INTO testing.test_table (ID, Name, Quantity, "Date") VALUES ('123a', 'John', 5, '2020-09-05'), ('123b', 'Jimmy', 7, '2020-09-05');
+
+SELECT * FROM testing.test_table;
+SELECT Total, Bill FROM testing.test_table;
+SELECT * FROM testing.test_table_view;
+
+ALTER TABLE testing.test_table ADD COLUMN new_column1 Nullable(String) DEFAULT toString('default1');
+ALTER TABLE testing.test_table ADD COLUMN new_column2 Nullable(String);
+SELECT * FROM testing.test_table;
+
+INSERT INTO testing.test_table (ID, Name, Quantity, "Date", new_column1, new_column2) VALUES ('123c', 'Jack', 5, '2020-09-05', 'Jack1', 'Jack2');
+SELECT * FROM testing.test_table;
+
+ALTER TABLE testing.test_table CLEAR COLUMN new_column2 IN PARTITION tuple('2020-09-05');
+ALTER  TABLE testing.test_table DROP COLUMN new_column2;
+SELECT * FROM testing.test_table;
+ALTER TABLE testing.test_table MODIFY COLUMN IF EXISTS Quantity Float64 DEFAULT -1;
+ALTER TABLE testing.test_table MODIFY COLUMN IF EXISTS Quantity Float32 DEFAULT -1;
+ALTER TABLE testing.test_table UPDATE new_column1 = 'Jimmy Anderson' WHERE Name='Jimmy';
+SELECT * FROM testing.test_table;
+
+ALTER TABLE testing.test_table DELETE WHERE Name='Jack';
+SELECT * FROM testing.test_table;
+
+SHOW DATABASES;
+SHOW TABLES [FROM | IN database_nameb] [LIKE '<pattern>' | WHERE filter_expression];
+SHOW TABLES FROM testing WHERE name LIKE '%view%';
+SHOW PROCESSLIST;
+
+USE database_name;
+
+CREATE database joins_example;
+
+CREATE TABLE joins_example.customers(
+customer_id String,
+name String,
+city String,
+birth_year String)
+ENGINE = MergeTree()
+PRIMARY KEY customer_id
+ORDER BY tuple(customer_id);
+
+
+CREATE  TABLE joins_example.orders(
+order_id String,
+customer_id String,
+quantity UInt64,
+bill_amount Float64)
+ENGINE = MergeTree()
+PRIMARY KEY order_id
+ORDER BY tuple(order_id);
+
+INSERT INTO joins_example.customers VALUES ('1a', 'Chloe', 'Manchester', '1982'),
+('1b', 'Richard', 'Leeds', '1996'),
+('1c', 'Emily', 'London', '1963'),
+('1d', 'William', 'Bristol', '1974'),
+('1e', 'Henry', 'Leeds', '1992'),
+('1f', 'Philip', 'Liverpool', '1987'),
+('1g', 'Lisa', 'Southampton', '1979'),
+('2a', 'Stephen', 'Norwich', '1979');
+
+INSERT INTO joins_example.orders VALUES ('a21', '1a', 7, 35.87),
+('a21', '1a', 105, 852.77),
+('a31', '1b', 12, 65.85),
+('a27', '1c', 45, 325.68),
+('a22', '1d', 87, 687.52),
+('b21', '1e', 72, 602.32),
+('g71', '1g', 32, 258.69),
+('h22', '1g', 23, 212.74),
+('q87', '1h', 49, 423.12),
+('q87', '1i', 55, 487.25),
+('q87', '1j', 68, 521.15);
+
+SELECT orders.order_id, orders.quantity, customers.name, customers.birth_year
+FROM joins_example.orders as orders
+INNER JOIN joins_example.customers as customers
+ON orders.customer_id = customers.customer_id;
+
+SELECT orders.order_id, orders.quantity, customers.name, customers.birth_year
+FROM joins_example.orders as orders
+LEFT JOIN joins_example.customers as customers
+ON orders.customer_id = customers.customer_id;
+
+SELECT orders.order_id, orders.quantity, customers.name, customers.birth_year
+FROM joins_example.orders as orders
+RIGHT JOIN joins_example.customers as customers
+ON orders.customer_id = customers.customer_id;
+
+SELECT orders.order_id, orders.quantity, customers.name, customers.birth_year
+FROM joins_example.orders as orders
+FULL JOIN joins_example.customers as customers
+ON orders.customer_id = customers.customer_id;
+
+SELECT * FROM joins_example.orders
+CROSS JOIN joins_example.customers;
+
+SELECT order_id as id FROM joins_example.orders 
+UNION ALL
+SELECT customer_id as id FROM joins_example.customers;

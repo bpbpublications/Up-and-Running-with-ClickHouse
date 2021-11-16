@@ -1,0 +1,236 @@
+CREATE TABLE IF NOT EXISTS mergetree_sample_table (
+    Name String,
+    Price UInt3),
+    Shop_ID UInt32 ,
+    Quantity UInt32)    
+ENGINE = MergeTree()
+PRIMARY KEY (Name, Price)
+SETTINGS index_granularity=2;
+
+INSERT INTO mergetree_sample_table 
+('Apple',2,1,40)
+('Apple',2,3,35)
+('Apple',3,2,45)
+('Apple',3,4,35)
+('Orange',1,2,40)
+('Orange',3,3,50)
+('Banana',2,1,25)
+('Banana',2,2,55);
+
+
+CREATE DATABASE mergetree_testing;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.mergetree (
+	ID String,
+	Name String DEFAULT ID CODEC(LZ4),
+	Quantity UInt32 CODEC(ZSTD),
+	"Date" Date,
+	
+ENGINE = MergeTree()
+PARTITION BY toYYYYMMDD(Date)
+PRIMARY KEY (ID)
+ORDER BY (ID, Name, Date)
+SETTINGS
+index_granularity=1024;
+
+INSERT INTO mergetree_testing.mergetree VALUES
+('aa','a', 1, '2020-01-01'),
+('aa','a', 2, '2020-01-02'),
+('ba','b', 1, '2020-01-03');
+
+SELECT * FROM mergetree_testing.mergetree;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.replacingmergetree (
+	ID String,
+	Name String,
+	DateOfBirth Date)
+ENGINE = ReplacingMergeTree()
+PARTITION BY ID
+ORDER BY (ID, DateOfBirth)
+SETTINGS
+index_granularity=1024;
+
+INSERT INTO mergetree_testing.replacingmergetree VALUES
+('a1', 'Jim', '1995-05-01'),
+('a1', 'Jim', '1995-05-01'),
+('a1', 'Jim', '1995-05-02'),
+('a2', 'Jil', '1995-06-01'),
+('a2', 'Jil', '1995-06-01'),
+('a2', 'Jil', '1995-06-02');
+
+OPTIMIZE TABLE mergetree_testing.replacingmergetree FINAL;
+
+SELECT * FROM mergetree_testing.replacingmergetree;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.replacingmergetree_1 (
+	ID String,
+	Name String,
+	DateOfBirth Date)
+ENGINE = ReplacingMergeTree(DateOfBirth)
+ORDER BY (ID, DateOfBirth)
+SETTINGS
+index_granularity=1024;
+
+INSERT INTO mergetree_testing.replacingmergetree_1 VALUES
+('a1', 'Jim', '1995-05-01'),
+('a1', 'Jimmy', '1995-05-02'),
+('a1', 'Jim', '1995-05-02'),
+('a2', 'Jil', '1995-06-01'),
+('a2', 'Jil', '1995-06-01'),
+('a2', 'Jil', '1995-06-02');
+
+SELECT * FROM mergetree_testing.replacingmergetree_1;
+OPTIMIZE TABLE mergetree_testing.replacingmergetree_1 FINAL;
+SELECT * FROM mergetree_testing.replacingmergetree_1;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.summingmergetree (
+	Name String,
+	Quantity UInt32,
+	Weight UInt32)
+ENGINE = SummingMergeTree()
+ORDER BY (Name)
+SETTINGS
+index_granularity=1024;
+
+INSERT INTO mergetree_testing.summingmergetree VALUES
+('Apple', 10, 25 ),
+('Apple', 8, 15 ),
+('Apple', 7, 14 ),
+('Orange', 10, 25 ),
+('Orange', 12, 35 ),
+('Orange', 14, 42 );
+
+SELECT * FROM mergetree_testing.summingmergetree;
+
+OPTIMIZE TABLE mergetree_testing.summingmergetree FINAL;
+SELECT * FROM mergetree_testing.summingmergetree;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.summingmergetree_1 (
+	Name String,
+	Quantity UInt32,
+	Price UInt32,
+	Weight UInt32)
+ENGINE = SummingMergeTree((Quantity, Weight))
+ORDER BY (Name)
+SETTINGS
+index_granularity=1024;
+
+INSERT INTO mergetree_testing.summingmergetree_1 VALUES
+('Apple', 10, 1, 25 ),
+('Apple', 8, 2, 15 ),
+('Apple', 7, 3, 14 ),
+('Orange', 10, 2, 25 ),
+('Orange', 12, 3, 35 ),
+('Orange', 14, 4, 42 );
+
+SELECT * FROM mergetree_testing.summingmergetree_1;
+
+OPTIMIZE TABLE mergetree_testing.summingmergetree_1 FINAL;
+SELECT * FROM mergetree_testing.summingmergetree_1;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.aggregatingmergetree(
+	Name String,
+	Quantity_Average AggregateFunction(avg, Float64),
+	Quantity_Minimum AggregateFunction(min, Float64),
+	Quantity_Maximum AggregateFunction(max, Float64))
+ENGINE = AggregatingMergeTree()
+ORDER BY (Name);
+
+
+INSERT INTO mergetree_testing.aggregatingmergetree
+SELECT Name,
+avgState(toFloat64(Quantity)) as Quantity_Average,
+minState(toFloat64(Quantity)) as Quantity_Minimum,
+maxState(toFloat64(Quantity)) as Quantity_Maximum
+FROM mergetree_testing.mergetree GROUP BY Name;
+
+SELECT Name, avgMerge(Quantity_Average) as average, minMerge(Quantity_Minimum) as minumum,
+maxMerge(Quantity_Maximum) as maximum
+FROM mergetree_testing.aggregatingmergetree
+GROUP BY Name;
+
+CREATE MATERIALIZED VIEW mergetree_testing.aggregatingmergetree_mat_view 
+ENGINE = AggregatingMergeTree()
+ORDER BY (Name)
+AS SELECT 
+Name,
+avgState(toFloat64(Quantity)) as Quantity_Average,
+minState(toFloat64(Quantity)) as Quantity_Minimum,
+maxState(toFloat64(Quantity)) as Quantity_Maximum
+FROM mergetree_testing.mergetree GROUP BY Name;
+
+SELECT * FROM mergetree_testing.aggregatingmergetree_mat_view ;
+
+INSERT INTO mergetree_testing.mergetree VALUES
+('cc','c', 1, '2020-01-01'),
+('cc','c', 2, '2020-01-02'),
+('cc','c', 1, '2020-01-03');
+
+SELECT * FROM mergetree_testing.aggregatingmergetree_mat_view ;
+
+SELECT Name, avgMerge(Quantity_Average) as average, minMerge(Quantity_Minimum) as minumum, maxMerge(Quantity_Maximum) as maximum FROM mergetree_testing.aggregatingmergetree_mat_view GROUP BY Name;
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.collapsingmergetree(
+	ID String,
+	Count UInt64,
+	Sign Int8)
+ENGINE = CollapsingMergeTree(Sign)
+ORDER BY (ID);
+
+INSERT INTO mergetree_testing.collapsingmergetree VALUES
+('a', 32, 1);
+SELECT * FROM mergetree_testing.collapsingmergetree ;
+
+
+INSERT INTO mergetree_testing.collapsingmergetree VALUES
+('a', 32, -1), ('a', 64, 1);
+
+SELECT * FROM mergetree_testing.collapsingmergetree ;
+
+SELECT * FROM mergetree_testing.collapsingmergetree ;
+
+INSERT INTO mergetree_testing.collapsingmergetree VALUES
+('b', 32, -1), ('b', 64, -1), ('b', 32, 1), ('b', 64, 1);
+
+SELECT * FROM mergetree_testing.collapsingmergetree ;
+
+INSERT INTO mergetree_testing.collapsingmergetree VALUES
+('c', 32, -1), ('c', 64, -1), ('c', 64, 1);
+
+SELECT * FROM mergetree_testing.collapsingmergetree ;
+
+OPTIMIZE TABLE mergetree_testing.collapsingmergetree FINAL;
+
+SELECT * FROM mergetree_testing.collapsingmergetree ;
+
+
+CREATE TABLE IF NOT EXISTS mergetree_testing.versionedcollapsingmergetree(
+	ID String,
+	Count UInt64,
+	Sign Int8,
+	Version UInt32)
+ENGINE = VersionedCollapsingMergeTree(Sign, Version)
+ORDER BY (ID);
+
+INSERT INTO mergetree_testing.versionedcollapsingmergetree VALUES
+('a', 32, 1, 1),
+('a', 32, 1, 1),
+('a', 64, -1, 1),
+('a', 256, 1, 2);
+SELECT * FROM mergetree_testing.versionedcollapsingmergetree;
+
+OPTIMIZE TABLE mergetree_testing.versionedcollapsingmergetree FINAL;
+SELECT * FROM mergetree_testing.versionedcollapsingmergetree;
+
+
+CREATE TABLE student_info
+(
+    Name String,
+    ID Int32,
+    Weight Float32,
+    Height Float32,
+    DateOfBrith Date)
+
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/student_info', 'replica_name')
+PARTITION BY toYYYYMM(DateOfBrith)
+ORDER BY (Name, ID)

@@ -1,0 +1,67 @@
+CREATE DATABASE log_engine_testing;
+
+CREATE TABLE log_engine_testing.tinylog (
+    ID String,
+    Name String,
+    Age UInt16,
+    Height Float32,
+    Weight Float32)
+ENGINE = TinyLog;
+
+INSERT INTO log_engine_testing.tinylog VALUES
+('a','Andrew', 46, 178.6, 75.4),
+('b','Brian', 68, 182.2, 85.1),
+('c','Charlotte', 35, 172.9, 68.3),
+('d','Daisy', 21, 183.1, 78.9),
+('e','Edwards', 75, 169.5, 71.5);
+
+SELECT * FROM log_engine_testing.tinylog;
+
+INSERT INTO log_engine_testing.tinylog VALUES
+('a','Andrew', 46, 178.6, 75.4),
+('b','Brian', 68, 182.2, 85.1);
+SELECT * FROM log_engine_testing.tinylog;
+
+CREATE TABLE log_engine_testing.log (
+    ID UInt16,
+    Name String,
+    Age UInt16,
+    Salary UInt64)
+ENGINE = Log;
+
+INSERT INTO log_engine_testing.log VALUES
+(1, 'Elysse', 27, 26542),
+(2, 'Suzie', 32, 25852),
+(3, 'Sarah', 25, 18546),
+(4, 'Victor', 37, 22358),
+(5, 'Benjamin', 28, 36584);
+SELECT * FROM log_engine_testing.log;
+
+INSERT INTO log_engine_testing.log VALUES
+(1, 'Elysse', 27, 26542),
+(2, 'Suzie', 32, 25852),
+(3, 'Sarah', 25, 18546);
+SELECT * FROM log_engine_testing.log;
+
+CREATE TABLE log_engine_testing.stripelog (
+ID UInt16,
+Name String,
+DateOfBirth Date,
+Occupation String)
+ENGINE = StripeLog;
+
+INSERT INTO log_engine_testing.stripelog VALUES
+(1, 'Elysse', '1994-05-11', 'Lawyer'),
+(2, 'Suzie', '1992-03-04', 'Doctor'),
+(3, 'Sarah', '1996-06-30', 'Architect'),
+(4, 'Victor', '1984-12-28', 'Teacher'),
+(5, 'Benjamin', '1956-11-01', 'Retired');
+
+SELECT * FROM log_engine_testing.stripelog;
+
+INSERT INTO log_engine_testing.stripelog VALUES
+(3, 'Sarah', '1996-06-30', 'Architect'),
+(4, 'Victor', '1984-12-28', 'Teacher'),
+(5, 'Benjamin', '1956-11-01', 'Retired');
+
+SELECT * FROM log_engine_testing.stripelog;

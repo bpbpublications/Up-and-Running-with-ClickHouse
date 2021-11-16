@@ -1,0 +1,92 @@
+CREATE TABLE external_data_sources.kafka_testing (
+    Name String,
+    Age UInt64,
+    Height UInt64,
+    Weight UInt64)
+  ENGINE = Kafka
+  SETTINGS kafka_broker_list = 'localhost:9092',
+           kafka_topic_list = 'clickhouse_kafka_topic',
+           kafka_group_name = 'clickhouse_kafka_group_1',
+           kafka_format = 'JSONEachRow',
+           kafka_num_consumers = 1;
+
+CREATE TABLE external_data_sources.kafka_testing_final (
+	Name String,
+	Age UInt64,
+	Height UInt64,
+	Weight UInt64)
+	ENGINE = MergeTree()
+	ORDER BY (Name, Age, Height, Weight)
+	index_granularity=2;
+
+CREATE MATERIALIZED VIEW external_data_sources.kafka_materialized_view
+TO external_data_sources.kafka_testing_final
+AS SELECT Name, 
+toUInt64OrZero(Age) AS Age, 
+toUInt64OrZero(Height) AS Height,
+toUInt64OrZero(Weight) AS Weight
+FROM external_data_sources.kafka_testing;
+
+
+CREATE DATABASE employees;
+
+CREATE TABLE employees.employees (	
+	emp_no UInt64,
+	first_name Nullable(String),
+	last_name Nullable(String),
+	hire_date Nullable(Date)
+)
+ENGINE = MySQL('127.0.0.1:3306', 'employees', 'employees', 'mysql_user', 'clickhouse');
+
+CREATE TABLE employees.employees_mergetree (	
+	emp_no UInt64,
+	first_name Nullable(String),
+	last_name Nullable(String),
+	hire_date Nullable(Date)
+)
+ENGINE = MergeTree()
+PRIMARY KEY emp_no
+ORDER BY (emp_no);
+
+INSERT INTO employees.employees_mergetree SELECT * FROM employees.employees;
+
+CREATE TABLE dvdrental.actor (  
+    actor_id UInt64,
+    first_name Nullable(String),
+    last_name Nullable(String),
+    last_update Nullable(Date)
+)
+ENGINE = PostgreSQL('127.0.0.1:5432', 'dvdrental', 'actor', 'postgres', 'postgres123');
+
+SELECT * FROM dvdrental.actor WHERE first_name = ‘Russell’;
+
+
+CREATE TABLE employees.employees_jdbc (	
+	emp_no UInt64,
+	first_name Nullable(String),
+	last_name Nullable(String),
+	hire_date Nullable(Date)
+)
+ENGINE = JDBC('jdbc:mysql://localhost:3306/?user=mysql_user&password=clickhouse', 'employees', 'employees')
+SELECT * FROM employees.employees_jdbc LIMIT 5;
+
+
+CREATE TABLE employees.employees_jdbc_mergetree (	
+	emp_no UInt64,
+	first_name Nullable(String),
+	last_name Nullable(String),
+	hire_date Nullable(Date)
+)
+ENGINE = MergeTree()
+PRIMARY KEY emp_no
+ORDER BY (emp_no);
+INSERT INTO employees.employees_jdbc_mergetree SELECT * FROM employees.employees_jdbc;
+SELECT * FROM employees.employees_jdbc_mergetree WHERE first_name='Parto' LIMIT 5;
+
+
+CREATE TABLE hdfs_engine.sample_hdfs_table (
+	emp_no UInt64,
+	first_name String,
+	last_name String,
+	hire_date Date )
+ENGINE=HDFS('hdfs://hdfs1:9000/sample_data', 'CSV')

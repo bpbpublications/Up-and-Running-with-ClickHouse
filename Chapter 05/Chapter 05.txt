@@ -1,0 +1,93 @@
+SELECT  toInt8(-322.8), toInt16(322.8), toInt32('-322'), toInt64('322002220');
+SELECT  toUInt8(322.8), toUInt16(322.8), toUInt32('322'), toUInt64('322002220');
+SELECT  toInt32OrZero('-322.0'), toInt64OrZero('322002220');
+SELECT  toUInt32OrZero('-322'), toUInt64OrZero('322002220');
+SELECT  toInt32OrNull('-322.0'), toInt64OrNull('322002220');
+SELECT  toUInt32OrNull('-322'), toUInt64OrNull('322002220');
+
+SELECT  toFloat32(-322+225.67), toFloat64('322002220.87');
+SELECT  toFloat32OrZero('-322.0a'), toFloat64OrZero('322002220.87');
+SELECT  toFloat32OrNull('-322.0a'), toFloat64OrNull('322002220.87');
+
+SELECT  toDecimal32(3.1412, 8), toDecimal64('2548.87',8);
+SELECT  toDecimal32OrZero('-322.0a',8), toDecimal64OrZero('207.32',12);
+SELECT  toDecimal32OrNull('-322.0a',8), toDecimal64OrNull('207.32',12);
+
+SELECT toDate('2020-08-01'), toDate(-100), toDate(100), toDate(100.5);
+SELECT  toDateTime('2020-08-01 00:00:00'), toDateTime(-2), toDateTime(2), toDateTime(-2.2);
+SELECT toDateOrZero('2020-08-01'), toDateOrZero('1847-08-01');
+SELECT toDateTimeOrZero('2020-08-01 00:00:00'), toDateTimeOrZero('1847-08-01');
+
+SELECT  toString(77), toString(32.1), toString(toDate('2002-08-01'));
+SELECT toFixedString(toString(123), 5);
+SELECT toStringCutToZero('abc\0def\0g');
+
+SELECT e(), pi();
+SELECT exp(0), exp2(3.14),  exp10(3.14);
+SELECT log(1), ln(2.0), log2(3.14), log10(3.14);
+SELECT sqrt(2.0), cbrt(8.0), power(3,3);
+SELECT sin(90), cos(270), tan(45);
+SELECT asin(0.99), acos(0.2), atan(0.1);
+SELECT erf(3), erfc(3);
+SELECT tgamma(10), lgamma(10);
+
+SELECT round(10.5354), round(10.535, 2);
+SELECT floor(10.534), floor(10.535,1);
+SELECT ceil(10.534), ceil(10.535,2);
+
+SELECT toDateTime('2020-05-05 07:06:51') as ts, toYear(ts) as year, toQuarter(ts) as quarter, toMonth(ts) as month, toWeek(ts) as week;
+SELECT toDateTime('2020-05-01 02:35:44') as ts, toHour(ts) as hour, toMinute(ts) as minutes, toSecond(ts) as seconds;
+SELECT toDate('2020-05-01') as dt, toDayOfWeek(dt) as day_week, toDayOfMonth(dt) as day_month, toDayOfYear(dt) as day_year;
+SELECT toDateTime('2020-05-01 02:35:44', 'US/Samoa') as samoa_ts, toTimeZone(samoa_ts, 'Asia/Kolkata') as asia_ts;
+SELECT toUnixTimestamp('2020-05-01 02:35:44');
+
+SELECT toDateTime('2020-05-05 07:06:51') as ts, toStartOfYear(ts) as year_start, toStartOfISOYear(ts) as start_iso_year, toStartOfQuarter(ts) as quarter_start, toStartOfMonth(ts) as month_start;
+SELECT toDateTime('2020-05-05 07:06:51') as ts, toMonday(ts) as nearest_monday, toStartOfWeek(ts) as week_start;
+SELECT toDateTime('2020-05-05 07:06:51') as ts, toStartOfDay (ts) as day_start, toStartOfHour (ts) as hour_start, toStartOfMinute(ts) as minute_start;
+SELECT toDateTime('2020-05-05 07:16:51') as ts, toStartOfFiveMinute(ts) five_mins, toStartOfTenMinutes(ts) as ten_mins, toStartOfFifteenMinutes(ts) as fifteen_mins;  
+SELECT toDateTime('2020-05-05 07:06:51') as ts, toYYYYMM(ts) as YYYYMM, toYYYYMMDD(ts)YYYYMMDD, toYYYYMMDDhhmmss(ts) as YYYYMMDDhhmmss;
+SELECT dateDiff('hour', toDateTime('2020-02-08 10:00:00'), toDateTime('2020-02-08 16:40:00')) as difference;
+
+SELECT toDateTime('2020-02-08 16:40:00') as ts, subtractYears(ts,7) as sub_years, subtractMonths(ts,7) as sub_months, subtractWeeks(ts,7) as sub_weeks, subtractDays(ts,7) as sub_days;
+SELECT toDate('2020-02-08') as ts, subtractHours (ts,7) as sub_hours, subtractMinutes(ts,7) as sub_minutes, subtractSeconds(ts,7) as sub_seconds;
+SELECT toDateTime('2020-02-08 16:40:00') as ts, addYears(ts,7) as add_years, addMonths(ts,7) as add_months, addWeeks(ts,7) as add_weeks, addDays(ts,7) as add_days;
+SELECT toDate('2020-02-08') as ts, addHours(ts,7) as add_hours, addMinutes(ts,7) as add_minutes, addSeconds(ts,7) as add_seconds;
+
+SELECT formatDateTime(toDate('1996-11-01'), '%d,%m,%Y') as formatted_date;
+
+SELECT empty(''), empty('Hi!');
+SELECT notEmpty(''), notEmpty('Hi!');
+SELECT 'ŠĤɓ_123' as text, length(text) as length, char_length(text) as char_length,lengthUTF8(text) as lengthUTF8, character_length(text) as character_length;
+
+SELECT 'Rain' as text, lower(text) as lower, upper(text) as upper;
+SELECT '\x52\x61\x69\x6E' as text, lowerUTF8(text) as lower, upperUTF8(text) as upper;
+SELECT 'air' as text, repeat(text,3) as repeat, reverse(text) as reverse, concat(text, 'water') as concat;
+SELECT 'Manhattan' as text,  substring(text, 4, 3) as substring, substr(text, 4, 3) as substr, mid(text, 4, 3) as mid;
+SELECT '      Hello      ' as txt, trimLeft(txt) as trim_left, trimRight(txt) as trim_right, trimBoth(txt) trim_both;
+SELECT trim(BOTH ' ' FROM '   Hello, world!   ') as trimmed;
+SELECT 'Hello' as txt, startsWith(txt, 'H') starts_with_H,  startsWith(txt, 'A') starts_with_A;
+SELECT 'Hello' as txt, endsWith(txt, 'o') ends_with_o,  endsWith(txt, 'a') ends_with_a;
+
+SELECT 'She sells sea shells, on the sea shore!' as txt, position(txt, 'sea') as position, multiSearchAllPositions(txt, ['sea', 'shore']) as multiple_positions;
+SELECT 'She sells sea shells, on the sea shore!' as txt, multiSearchFirstPosition(txt, ['sea', 'She']) as first_pos;
+SELECT 'She sells sea shells, on the sea shore!' as txt, multiSearchFirstIndex(txt, ['shop', 'shore', 'sea']) as first_ind;
+SELECT 'She sells sea shells, on the sea shore!' as txt, multiSearchAny(txt, ['shop', 'shore', 'sea']) as search_any_yes, multiSearchAny(txt, ['shop', 'share', 'see']) as search_any_no;
+SELECT 'She sells sea shells, on the sea shore!' as txt, match(txt, 'he.') as matched, match(txt, '[\d]') as not_match;
+SELECT 'She sells sea shells, on the sea shore!' as txt, multiMatchAny(txt,['[\d]', 'sea.']) as match, multiMatchAny(txt,['[\d]', 'john']) as no_match;
+SELECT 'She sells sea shells, on the sea shore!' as txt, multiMatchAllIndices(txt,['[\d]', 'sea.', 'she.']) as match;
+SELECT 'She sells sea shells, on the sea shore!' as txt, like(txt, '%sea%') as like, notLike(txt, '%sea%') as not_like;
+SELECT 'She sells sea shells, on the sea shore!' as txt, extract(txt, 's...s') as extract, extractAll(txt, 's...s') as extract_all;
+SELECT 'She sells sea shells, on the sea shore!' as txt, replaceOne(txt, 'sea', 'SEA') as replace_one, replaceAll(txt, 'sea', 'SEA') as replace_all;
+SELECT 'She sells sea shells, on the sea shore!' as txt, replaceRegexpOne(txt, 's..', 'SEA'), replaceRegexpAll(txt, 's.a', 'SEA');
+
+SELECT  array(1,2,3) as arr, empty(arr) as is_empty, notEmpty(arr) as is_not_empty, length(arr) as length;
+SELECT emptyArrayUInt8() as int_arr, emptyArrayFloat32() as float_arr, emptyArrayString() as string_arr, emptyArrayDateTime() as date_time_arr;
+SELECT arrayConcat ([1,2,3], [7,8,9], [4,5,6]) as concat_array;
+SELECT array('a','b','c') as arr, arrayElement(arr, 2) array_element, has(arr, 'e') as has_element, hasAll(arr, ['a','b']) as hasAll, hasAny(arr,['c','d','e']) as has_any;
+SELECT array(3,1,2,4,5,1,2,3) as arr, indexOf(arr,2) as index, countEqual(arr,2) as count;
+SELECT  array(1,2,4) as arr, arrayPushFront(arr,7) as  push_front, arrayPushBack(arr,7) as push_back, arrayPopFront(arr) as pop_front, arrayPopBack(arr) as pop_back;
+SELECT  array(1,2,3,4,5) as arr, arraySlice(arr, 3, 2) as slice, arrayResize(arr, 7, 7) as resize;
+SELECT  array(3,1,8,4,5,2) as arr, arraySort(arr) as sort, arrayReverseSort(arr) as rev_sort;
+SELECT  array(3,1,2,4,5,1,2,3) as arr, arrayUniq(arr) as unique_count, arrayDistinct(arr) as unique_elements;
+SELECT 'Hello Hi Hello Hi' as txt, splitByChar(' ', txt) as split_char, splitByString('Hello',txt) as split_string;
+SELECT array('a','p','p','l','e') as arr, arrayStringConcat(arr,':') arr_str;
